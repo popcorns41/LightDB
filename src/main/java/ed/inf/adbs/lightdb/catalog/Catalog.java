@@ -1,0 +1,212 @@
+package ed.inf.adbs.lightdb.catalog;
+
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;;
+
+public final class Catalog {
+    private static volatile Catalog INSTANCE;
+
+    private final Path dbRoot;
+    private final Path catalogFile;
+    private final Path tablesDir;
+
+    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+    private final Map<Long, TableMeta> tablesById = new HashMap<>();
+    private final Map<String, Long> idByName = new HashMap<>();
+
+    private long lastTableId = 0L;
+
+    private Catalog(Path dbRoot) {
+        this.dbRoot = dbRoot;
+        this.catalogFile = dbRoot.resolve("catalog.txt");
+        this.tablesDir = dbRoot.resolve("tables");
+    }
+
+    public static Catalog init(Path dbRoot) throws IOException {
+        if (dbRoot == null) throw new NullPointerException("dbRoot cannot be null");
+
+        if (INSTANCE == null) {
+            synchronized (Catalog.class) {
+                if (INSTANCE == null) {
+                    Catalog catalog = new Catalog(dbRoot);
+                    catalog.loadIfExists();
+                    INSTANCE = catalog;
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
+    public static Catalog getInstance() {
+        Catalog inst = INSTANCE;
+        if (inst == null) {
+            throw new IllegalStateException("Catalog not initialized. Call Catalog.init(Path dbRoot) first.");
+        }
+        return inst;
+    }
+
+    public Path getDbRoot() {
+        return dbRoot;
+    }
+
+    public Optional<TableMeta> getTable(String tableName){
+        if (tableName == null) throw new NullPointerException("tableName cannot be null");
+        String norm = normaliseName(tableName);
+
+        rwLock.readLock().lock();
+
+        try {
+            Long tableId = idByName.get(norm);
+            if (tableId == null) {
+                return Optional.empty();
+            }
+            return Optional.of(tablesById.get(tableId));
+        } finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    public Optional<TableMeta> getTable(long tableId){
+        rwLock.readLock().lock();
+
+        try {
+            return Optional.ofNullable(tablesById.get(tableId));
+        } finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    // Returns a list of all tables sorted by name
+
+    public List<TableMeta> listTables(){
+        rwLock.readLock().lock();
+        try {
+            List<TableMeta> tables = new ArrayList<>(tablesById.values());
+            Collections.sort(tables, new Comparator<TableMeta>() {
+                @Override
+                public int compare(TableMeta t1, TableMeta t2) {
+                    return t1.getName().compareTo(t2.getName());
+                }
+            });
+            return tables;
+        } finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    // Creates a new table in the catalog
+
+    public TableMeta createTable(String tableName, List<ColumnMeta> columns, String dataFile) throws IOException {
+        if (tableName == null) throw new NullPointerException("tableName cannot be null");
+        if (columns == null) throw new NullPointerException("columns cannot be null");
+        if (dataFile == null) throw new NullPointerException("dataFile cannot be null");
+
+        String norm = normaliseName(tableName);
+
+        rwLock.writeLock().lock();
+        try {
+            if (idByName.containsKey(norm)) {
+                throw new IllegalArgumentException("Table with name '" + tableName + "' already exists.");
+            }
+
+            Files.createDirectories(tablesDir);
+
+            long newTableId = ++lastTableId;
+            
+            //my preferred file naming convention
+
+            String fileName = newTableId + "_" + norm + ".tbl";
+            Path tableFile = tablesDir.resolve(fileName);
+
+            TableMeta tableMeta = new TableMeta(newTableId, tableName, columns, tableFile.toString());
+
+            tablesById.put(newTableId,  tableMeta);
+            idByName.put(norm, newTableId);
+
+            flushInternal();
+            return tableMeta;
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+      /**
+     * Drop table metadata. Optionally delete the underlying table data file.
+     * Note: catalog is updated first, then file deletion attempted.
+     */
+
+    public void dropTable(String tableName) throws IOException {
+        if (tableName == null) throw new NullPointerException("tableName cannot be null");
+        String norm = normaliseName(tableName);
+
+        rwLock.writeLock().lock();
+        try {
+            Long tableId = idByName.remove(norm);
+            if (tableId != null) {
+                tablesById.remove(tableId);
+
+                // Persist the updated catalog
+                CatalogSnapshot snap = new CatalogSnapshot(lastTableId, new ArrayList<>(tablesById.values()));
+                CatalogSnapshotIO.write(catalogFile, snap);
+            }
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+    public void flush() throws IOException {
+        rwLock.readLock().lock();
+        try {
+            flushInternal();
+        } finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+
+    // ---------------- Persistence ----------------
+
+    private void loadIfExists() throws IOException {
+        if (!Files.exists(catalogFile)) {
+            return;
+        }
+
+        CatalogSnapshot snap = CatalogSnapshotIO.read(catalogFile);
+
+        this.lastTableId = snap.getLastTableId();
+        this.tablesById.clear();
+        this.idByName.clear();
+
+        for (TableMeta table : snap.getTables()) {
+            tablesById.put(table.getTableId(), table);
+            idByName.put(normaliseName(table.getName()), table.getTableId());
+        }
+    }
+
+    private void flushInternal() throws IOException {
+        CatalogSnapshot snap = new CatalogSnapshot(lastTableId, new ArrayList<>(tablesById.values()));
+
+        Path tmp = catalogFile.resolveSibling(catalogFile.getFileName().toString() + ".tmp");
+
+        CatalogSnapshotIO.write(tmp, snap);
+
+        // Atomic move to replace the catalog file; fallback if not supported
+
+        try{
+            Files.move(tmp, catalogFile,
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE
+            );
+        } catch (AtomicMoveNotSupportedException e){
+            Files.move(tmp, catalogFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static String normaliseName(String name){
+        return name.trim().toLowerCase();
+    }
+    
+}

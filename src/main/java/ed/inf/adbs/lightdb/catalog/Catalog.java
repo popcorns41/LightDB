@@ -99,35 +99,35 @@ public final class Catalog {
 
     // Creates a new table in the catalog
 
-    public TableMeta createTable(String tableName, List<ColumnMeta> columns, String dataFile) throws IOException {
-        if (tableName == null) throw new NullPointerException("tableName cannot be null");
-        if (columns == null) throw new NullPointerException("columns cannot be null");
-        if (dataFile == null) throw new NullPointerException("dataFile cannot be null");
+     public TableMeta createTable(String tableName, List<ColumnMeta> columns) throws IOException {
+        if (tableName == null) throw new NullPointerException("tableName");
+        if (columns == null) throw new NullPointerException("columns");
+        if (columns.isEmpty()) throw new IllegalArgumentException("Table must have at least one column.");
 
         String norm = normaliseName(tableName);
 
         rwLock.writeLock().lock();
         try {
             if (idByName.containsKey(norm)) {
-                throw new IllegalArgumentException("Table with name '" + tableName + "' already exists.");
+                throw new IllegalArgumentException("Table already exists: " + tableName);
             }
 
             Files.createDirectories(tablesDir);
 
-            long newTableId = ++lastTableId;
-            
-            //my preferred file naming convention
+            long tableId = ++lastTableId;
 
-            String fileName = newTableId + "_" + norm + ".tbl";
-            Path tableFile = tablesDir.resolve(fileName);
+            // Keep file name deterministic and simple.
+            // (You can rename table without renaming the file later if you want.)
+            String filename = tableId + "_" + norm + ".tbl";
+            Path tableFile = tablesDir.resolve(filename);
 
-            TableMeta tableMeta = new TableMeta(newTableId, tableName, columns, tableFile.toString());
+            TableMeta meta = new TableMeta(tableId, norm, columns, tableFile.toString());
 
-            tablesById.put(newTableId,  tableMeta);
-            idByName.put(norm, newTableId);
+            tablesById.put(tableId, meta);
+            idByName.put(norm, tableId);
 
             flushInternal();
-            return tableMeta;
+            return meta;
         } finally {
             rwLock.writeLock().unlock();
         }
@@ -138,22 +138,25 @@ public final class Catalog {
      * Note: catalog is updated first, then file deletion attempted.
      */
 
-    public void dropTable(String tableName) throws IOException {
-        if (tableName == null) throw new NullPointerException("tableName cannot be null");
+    public void dropTable(String tableName, boolean deleteDataFile) throws IOException {
+        if (tableName == null) throw new NullPointerException("tableName");
         String norm = normaliseName(tableName);
+
+        TableMeta removed = null;
 
         rwLock.writeLock().lock();
         try {
-            Long tableId = idByName.remove(norm);
-            if (tableId != null) {
-                tablesById.remove(tableId);
+            Long id = idByName.remove(norm);
+            if (id == null) return;
 
-                // Persist the updated catalog
-                CatalogSnapshot snap = new CatalogSnapshot(lastTableId, new ArrayList<>(tablesById.values()));
-                CatalogSnapshotIO.write(catalogFile, snap);
-            }
+            removed = tablesById.remove(id);
+            flushInternal();
         } finally {
             rwLock.writeLock().unlock();
+        }
+
+        if (deleteDataFile && removed != null) {
+            Files.deleteIfExists(Paths.get(removed.getDataFile()));
         }
     }
 

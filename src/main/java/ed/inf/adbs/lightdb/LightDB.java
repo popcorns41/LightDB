@@ -7,7 +7,11 @@ import java.io.IOException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
+import ed.inf.adbs.lightdb.catalog.Catalog;
 import ed.inf.adbs.lightdb.operator.Operator;
+
+
+import java.nio.file.Paths;
 
 /**
  * Lightweight in-memory database system.
@@ -18,7 +22,7 @@ import ed.inf.adbs.lightdb.operator.Operator;
  */
 public class LightDB {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception{
 
 		if (args.length != 3) {
 			System.err.println("Usage: LightDB database_dir input_file output_file");
@@ -28,6 +32,9 @@ public class LightDB {
 		String databaseDir = args[0];
 		String inputFile = args[1];
 		String outputFile = args[2];
+
+		String dbRoot = databaseDir != null ? databaseDir : "samples/db/default";
+		Catalog.init(Paths.get(dbRoot));
 
 		// Just for demonstration, replace this function call with your logic
 		parsingExample(inputFile);

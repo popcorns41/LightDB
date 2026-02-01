@@ -8,8 +8,9 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
 import ed.inf.adbs.lightdb.catalog.Catalog;
+import ed.inf.adbs.lightdb.catalog.SchemaLoader;
 import ed.inf.adbs.lightdb.operator.Operator;
-
+import ed.inf.adbs.lightdb.operator.ScanOperator;
 
 import java.nio.file.Paths;
 
@@ -35,6 +36,13 @@ public class LightDB {
 
 		String dbRoot = databaseDir != null ? databaseDir : "samples/db/default";
 		Catalog.init(Paths.get(dbRoot));
+		SchemaLoader.loadIntoCatalog(Paths.get("samples/db/schema.txt"), Paths.get("samples/db/data"));	
+
+		ScanOperator scanOp = new ScanOperator("Student");
+		Tuple tuple;
+		while ((tuple = scanOp.getNextTuple()) != null) {
+			System.out.println(tuple);
+		}
 
 		// Just for demonstration, replace this function call with your logic
 		parsingExample(inputFile);

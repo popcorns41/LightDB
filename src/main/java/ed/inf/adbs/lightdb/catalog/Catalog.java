@@ -133,6 +133,35 @@ public final class Catalog {
         }
     }
 
+    // Registers an existing table in the catalog
+
+    public TableMeta registerTable(String tableName, List<ColumnMeta> columns, Path dataFile) throws IOException {
+        if (tableName == null) throw new NullPointerException("tableName");
+        if (columns == null) throw new NullPointerException("columns");
+        if (dataFile == null) throw new NullPointerException("dataFile");
+        if (columns.isEmpty()) throw new IllegalArgumentException("Table must have at least one column.");
+
+        String norm = normaliseName(tableName);
+
+        rwLock.writeLock().lock();
+        try {
+            if (idByName.containsKey(norm)) {
+                throw new IllegalArgumentException("Table already exists: " + tableName);
+            }
+
+            long tableId = ++lastTableId;
+
+            TableMeta meta = new TableMeta(tableId, norm, columns, dataFile.toString());
+
+            tablesById.put(tableId, meta);
+            idByName.put(norm, tableId);
+
+            flushInternal();
+            return meta;
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
       /**
      * Drop table metadata. Optionally delete the underlying table data file.
      * Note: catalog is updated first, then file deletion attempted.

@@ -11,6 +11,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import ed.inf.adbs.lightdb.catalog.Catalog;
 import ed.inf.adbs.lightdb.catalog.SchemaLoader;
 import ed.inf.adbs.lightdb.operator.Operator;
+import ed.inf.adbs.lightdb.planner.QueryPlanner;
 
 import java.nio.file.Paths;
 

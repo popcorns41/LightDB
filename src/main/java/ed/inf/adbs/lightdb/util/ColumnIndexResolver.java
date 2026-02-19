@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class ColumnIndexResolver {
+public class ColumnIndexResolver implements ColumnResolver {
     private final Map<String,Integer> indexByRef = new HashMap<String,Integer>();
 
     /**

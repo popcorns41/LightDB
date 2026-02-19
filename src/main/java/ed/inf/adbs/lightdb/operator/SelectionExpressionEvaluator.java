@@ -1,8 +1,7 @@
 package ed.inf.adbs.lightdb.operator;
 
 import ed.inf.adbs.lightdb.Tuple;
-import ed.inf.adbs.lightdb.util.ColumnIndexResolver;
-
+import ed.inf.adbs.lightdb.util.ColumnResolver;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
@@ -22,7 +21,7 @@ import java.util.Deque;
 
 
 public final class SelectionExpressionEvaluator extends ExpressionDeParser {
-    private final ColumnIndexResolver resolver;
+    private final ColumnResolver resolver;
     private final Tuple tuple;
 
     private final Deque<Object> stack = new ArrayDeque<Object>();
@@ -34,8 +33,8 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
      * @param tuple
      */
 
-    public SelectionExpressionEvaluator(ColumnIndexResolver resolver, Tuple tuple) {
-        if (resolver == null) throw new NullPointerException("columnIndexResolver cannot be null");
+    public SelectionExpressionEvaluator(ColumnResolver resolver, Tuple tuple) {
+        if (resolver == null) throw new NullPointerException("resolver cannot be null");
         if (tuple == null) throw new NullPointerException("tuple cannot be null");
 
         this.resolver = resolver;

@@ -26,7 +26,7 @@ public class ScanOperator extends Operator {
 
         Catalog catalog = Catalog.getInstance();
         Optional<TableMeta> tableMetaOpt = catalog.getTable(tableName);
-        if (tableMetaOpt.isEmpty()) {
+        if (!tableMetaOpt.isPresent()) {
             throw new IllegalArgumentException("Table not found in catalog: " + tableName);
         }
 

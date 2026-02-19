@@ -10,6 +10,7 @@
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/catalog/SchemaLoader.java
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/catalog/ColumnMeta.java
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/catalog/TableMeta.java
+/Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/operator/ProjectOperator.java
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/operator/Operator.java
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/operator/SelectionExpressionEvaluator.java
 /Users/oliverhill/ADB_cw/LightDB/src/main/java/ed/inf/adbs/lightdb/operator/ScanOperator.java

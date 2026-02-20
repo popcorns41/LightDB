@@ -1,10 +1,6 @@
 samples/db/catalog.txt
 samples/db/catalog.bin
 samples/db/catalog.bin.tmp
-<<<<<<< HEAD
 target/
-=======
-target/lightdb/
 scrapCode/
-target/
->>>>>>> a9f71ce (Implementing JOIN Functionality, decomposed planner into different functional classes (needs Comments!). Testing to be implemented <3)
+temp.txt

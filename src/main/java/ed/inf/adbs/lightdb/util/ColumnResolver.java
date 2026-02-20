@@ -1,6 +1,8 @@
 package ed.inf.adbs.lightdb.util;
 
-//TODO: COMMENTING!
+/**
+ * ColumnResolver is a simple interface that allows operators to resolve column references in expressions to their corresponding column indices in the operator's output schema.
+ */
 public interface ColumnResolver {
     int indexOf(String maybeTable, String column);
 }

@@ -9,6 +9,11 @@ import net.sf.jsqlparser.expression.Expression;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JoinOperator is a binary operator that performs a nested loop join between two child operators (left and right) based on an
+ * optional join condition. It iterates through each tuple from the left child and for each left tuple, it iterates through the right
+ * child to find matching tuples based on the join condition.
+ */
 
 public final class JoinOperator extends Operator {
     private final Operator leftChild;

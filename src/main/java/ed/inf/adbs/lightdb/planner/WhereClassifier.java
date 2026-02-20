@@ -5,6 +5,17 @@ import net.sf.jsqlparser.expression.Expression;
 
 import java.util.*;
 
+/**
+ * WhereClassifier is a utility class to decompose the WHERE clause of a SQL query into components that can be applied at different stages
+ *  of query execution. It takes the WHERE expression and allows you to extract:
+ * 
+ * 1) Single-table predicates: conditions that reference only one table, which can be pushed down to the scan operator for that table.
+ * 2) Join predicates: conditions that reference columns from two sets of tables (e.g., left and right in a join), which can be applied at the join operator.
+ * 3) Remaining predicates: any conditions that are not extracted as single-table or join predicates, which can be applied at the top of the operator tree as a safety net.
+ * 
+ * The class maintains an internal list of remaining predicates that are updated as predicates are extracted. 
+ */
+
 public final class WhereClassifier {
 
     private final List<Expression> remaining;

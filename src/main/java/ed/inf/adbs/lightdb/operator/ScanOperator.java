@@ -13,6 +13,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * ScanOperator is a leaf operator that reads tuples from a specified table. It uses the Catalog to find the corresponding data file 
+ * for the table and reads it line by line, converting each line into a Tuple. 
+ * The operator supports resetting, which reopens the data file to allow for re-scanning from the beginning.
+ * 
+ * @PARAM tableName The name of the table to scan, which must exist in the Catalog. The operator will read from the data file associated with this table.
+ */
+
 public class ScanOperator extends Operator {
     private static final String DELIMITER_REGEX = ",";
     

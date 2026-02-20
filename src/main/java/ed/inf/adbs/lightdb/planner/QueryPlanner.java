@@ -8,8 +8,6 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
-//TODO: definitely broken need to find how to fix <3
-
 public final class QueryPlanner {
     private QueryPlanner() {}
 

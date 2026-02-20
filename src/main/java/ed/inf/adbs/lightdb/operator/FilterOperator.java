@@ -8,7 +8,12 @@ import net.sf.jsqlparser.expression.Expression;
 
 import java.util.List;
 
-//TODO: Comment on this class's functionality <3
+/**
+ * FilterOperator is a unary operator that applies a selection predicate to the tuples produced by its child operator. 
+ * It uses a SelectionExpressionEvaluator to evaluate the predicate on each tuple, and only returns those tuples for 
+ * which the predicate evaluates to true. If the predicate is null, it simply passes through all tuples from the child. 
+ * The operator also supports resetting, which resets the child operator to allow for re-scanning.
+ */
 
 public final class FilterOperator extends Operator {
     private final Operator child;

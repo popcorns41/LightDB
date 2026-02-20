@@ -19,6 +19,12 @@ import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+    /**
+     * Create an evaluator for a selection expression. Observe that the expression
+     *  may contain Column references, which will be resolved using the provided resolver and tuple.
+     * @param resolver
+     * @param tuple
+     */
 
 public final class SelectionExpressionEvaluator extends ExpressionDeParser {
     private final ColumnResolver resolver;
@@ -26,12 +32,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
 
     private final Deque<Object> stack = new ArrayDeque<Object>();
 
-    /**
-     * Create an evaluator for a selection expression. Observe that the expression
-     *  may contain Column references, which will be resolved using the provided resolver and tuple.
-     * @param resolver
-     * @param tuple
-     */
+
 
     public SelectionExpressionEvaluator(ColumnResolver resolver, Tuple tuple) {
         if (resolver == null) throw new NullPointerException("resolver cannot be null");

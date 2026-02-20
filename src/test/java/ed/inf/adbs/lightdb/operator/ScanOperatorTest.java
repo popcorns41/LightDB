@@ -1,20 +1,17 @@
 package ed.inf.adbs.lightdb.operator;
 
-import ed.inf.adbs.lightdb.Tuple;
+
 import ed.inf.adbs.lightdb.catalog.Catalog;
 import ed.inf.adbs.lightdb.catalog.SchemaLoader;
 
-import org.junit.After;
+
 import org.junit.Before;
-import org.junit.Test;
+
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.junit.Assert.*;
 
 public class ScanOperatorTest {
     

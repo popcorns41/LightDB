@@ -4,7 +4,16 @@ import ed.inf.adbs.lightdb.catalog.ColumnMeta;
 import ed.inf.adbs.lightdb.catalog.TableMeta;
 
 import java.util.*;
-//TODO: Comment on functionality <3
+
+/**
+ * Resolves column references to tuple indices for a single operator that produces tuples containing fields from multiple tables.
+ * This is used for operators like Join that combine fields from multiple tables into a single tuple. 
+ * It supports both qualified (e.g. "Course.cid") and unqualified (e.g. "cid") column references, and handles ambiguity 
+ * in unqualified references by throwing an exception.
+ * 
+ * @PARAM tablesInTupleOrder the list of tables whose fields are combined in the output tuples, in the order they appear in the tuple (e.g. [Course, Student] for a join of Course and Student)
+ */
+
 public final class MultiTableColumnIndexResolver implements ColumnResolver {
     private final Map<String, Integer> indexByQualified = new HashMap<String, Integer>();
     private final Map<String, List<Integer>> indexesByUnqualified = new HashMap<String, List<Integer>>();
@@ -31,6 +40,10 @@ public final class MultiTableColumnIndexResolver implements ColumnResolver {
         }
     }
 
+    // This method resolves a column reference to its index in the output tuple. 
+    // It first checks for a qualified reference (table.column), and if not found, 
+    // it checks for an unqualified reference (column). 
+    // If the unqualified reference is ambiguous (i.e. appears in multiple tables), it throws an exception.
     @Override
     public int indexOf(String maybeTable, String column) {
         if (maybeTable != null && !maybeTable.trim().isEmpty()) {

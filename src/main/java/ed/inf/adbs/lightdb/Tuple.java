@@ -29,6 +29,16 @@ public final class Tuple {
         return String.join(",",values);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tuple)) return false;
+        Tuple tuple = (Tuple) o;
+        return values.equals(tuple.values);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return values.hashCode();
+    }
 }

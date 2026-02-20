@@ -5,10 +5,20 @@ import ed.inf.adbs.lightdb.Tuple;
 import java.util.*;
 
 
-//TODO: Recomment the changes <3
+
 /**
  * ASSUMES ALL FIELDS ARE INTS 
  * 
+ * This operator takes all tuples from the child operator, materializes them in memory, 
+ * and sorts them according to the specified ORDER BY columns and sort directions.
+ * 
+ * NOTE: This implementation materializes the entire input before sorting, which is not memory efficient for large datasets.
+ *  In a real system, you would want to implement an external sort that can handle data larger than memory.
+ * 
+ * @PARAM child the input operator to sort
+ * @param orderByColumns the list of column references to sort by, in order of precedence (e.g. ["Course.cid", "Student.name"])
+ * @param ascending a list of booleans indicating whether each corresponding column in orderByColumns should be sorted in ascending (true) or descending (false) order
+ * @param outputRefsInOrder the list of column references that the child operator outputs, in the order they appear in the output tuples (e.g. ["Course.cid", "Student.name"])
  * 
 */
 
@@ -97,7 +107,8 @@ public final class SortOperator extends Operator {
 
                     long av = Long.parseLong(a.get(idx).trim());
                     long bv = Long.parseLong(b.get(idx).trim());
-                    //TODO: Explain logic
+
+                    // Compare as longs for numeric sorting, based on assumption that all fields are ints.
                     int cmp = (av < bv) ? -1 : (av > bv) ? 1 : 0;
                     if (cmp != 0) return SortOperator.this.ascending[i] ? cmp : -cmp;
                 }

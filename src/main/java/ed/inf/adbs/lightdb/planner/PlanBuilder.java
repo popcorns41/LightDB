@@ -82,7 +82,7 @@ public final class PlanBuilder {
 
         Operator root = acc.op;
 
-        // 5) Any leftover predicates apply at the top (rare but keeps you correct)
+        // 5) Any leftover predicates apply at the top
         List<Expression> leftover = wc.getRemaining();
         if (!leftover.isEmpty()) {
             root = new FilterOperator(root, ExpressionUtils.andAll(leftover), acc.tables);
@@ -107,7 +107,12 @@ public final class PlanBuilder {
             outputRefsInOrder = proj.getOutputRefs();
         }
 
-        // 7) ORDER BY AFTER projection
+        // 7) Distinct
+        if (ps.getDistinct() != null){
+            root = new DuplicateEliminationOperator(root);
+        }
+
+        // 8) ORDER BY AFTER projection
         OrderSpec order = parseOrderBy(ps);
         if (order != null) {
             root = new SortOperator(root, order.cols, order.asc, outputRefsInOrder);

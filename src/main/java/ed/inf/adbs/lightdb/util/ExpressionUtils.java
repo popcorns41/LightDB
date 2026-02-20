@@ -45,7 +45,7 @@ public final class ExpressionUtils {
 
         if (e == null) return tables;
         
-        //TODO: Write comment explaining this functionality
+        // Walk the expression tree and collect table names from Column nodes
         e.accept(new ExpressionDeParser() {
             @Override
             public void visit(Column column){

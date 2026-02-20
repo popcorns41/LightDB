@@ -1,4 +1,4 @@
 samples/db/catalog.txt
 samples/db/catalog.bin
 samples/db/catalog.bin.tmp
-target/lightdb/
+target/

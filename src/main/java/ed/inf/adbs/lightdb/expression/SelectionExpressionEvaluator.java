@@ -1,4 +1,4 @@
-package ed.inf.adbs.lightdb.operator;
+package ed.inf.adbs.lightdb.expression;
 
 import ed.inf.adbs.lightdb.Tuple;
 import ed.inf.adbs.lightdb.util.ColumnResolver;

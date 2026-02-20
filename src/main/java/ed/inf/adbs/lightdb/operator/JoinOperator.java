@@ -2,6 +2,7 @@ package ed.inf.adbs.lightdb.operator;
 
 import ed.inf.adbs.lightdb.Tuple;
 import ed.inf.adbs.lightdb.catalog.TableMeta;
+import ed.inf.adbs.lightdb.expression.SelectionExpressionEvaluator;
 import ed.inf.adbs.lightdb.util.MultiTableColumnIndexResolver;
 
 import net.sf.jsqlparser.expression.Expression;

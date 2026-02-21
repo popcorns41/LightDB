@@ -154,10 +154,9 @@ public class QueryAnalyserTest {
         assertTrue(outRefs.get(0).startsWith("sum("));
     }
 
-    // Does an unsupported aggregate throw an exception?
+    // Does an unsupported aggregate with star throw an exception?
     @Test
     public void countStarParsedAsAgg() throws Exception {
-        // You haven't implemented COUNT in execution yet, but the analyzer supports it.
         QueryAnalysis qa = analyse("SELECT COUNT(*) FROM Student;");
 
         assertFalse(qa.isStar);
@@ -171,7 +170,7 @@ public class QueryAnalyserTest {
         assertNull("COUNT(*) arg should be null in our model", qa.aggregates.get(0).arg);
     }
 
-    // Does COUNT(column) (an unsupported aggregate) throw an exception?
+    // Does a non supported aggregate with column argument parse correctly?
     @Test
     public void countColumnParsedAsAgg() throws Exception {
         QueryAnalysis qa = analyse("SELECT COUNT(Student.A) FROM Student;");
@@ -189,7 +188,6 @@ public class QueryAnalyserTest {
             analyse("SELECT MIN(Student.A) FROM Student;");
             fail("Expected IllegalArgumentException for unsupported aggregate");
         } catch (IllegalArgumentException ex) {
-            // message comes from non-agg item check, OR unsupported aggregate depending on your analyzer config
             // We'll accept either as long as it fails.
             assertNotNull(ex.getMessage());
         }

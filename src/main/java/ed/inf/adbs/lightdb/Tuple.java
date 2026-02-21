@@ -26,7 +26,7 @@ public final class Tuple {
 
     @Override
     public String toString(){
-        return String.join(",",values);
+        return String.join(", ",values);
     }
 
     @Override

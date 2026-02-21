@@ -41,7 +41,7 @@ public class LightDB {
 
 		Operator root = QueryPlanner.buildPlan(inputFile);
 		
-		execute(root, "temp.txt");
+		execute(root, outputFile);
 		// Just for demonstration, replace this function call with your logic
 		// parsingExample(inputFile);
 

@@ -1,17 +1,18 @@
 package ed.inf.adbs.lightdb.operator;
 
 
-import ed.inf.adbs.lightdb.Tuple;
-import ed.inf.adbs.lightdb.catalog.Catalog;
-import ed.inf.adbs.lightdb.catalog.TableMeta;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+
+import ed.inf.adbs.lightdb.Tuple;
+import ed.inf.adbs.lightdb.catalog.Catalog;
+import ed.inf.adbs.lightdb.catalog.TableMeta;
 
 /**
  * ScanOperator is a leaf operator that reads tuples from a specified table. It uses the Catalog to find the corresponding data file 
@@ -48,12 +49,16 @@ public class ScanOperator extends Operator {
     public Tuple getNextTuple() {
         try {
             String line = reader.readLine();
-            if (line == null) {
-                return null; 
+            if (line == null) return null;
+
+            String[] values = line.split(DELIMITER_REGEX, -1);
+
+            // Trim values so tuples are canonical regardless of CSV spacing
+            List<String> valueList = new java.util.ArrayList<String>(values.length);
+            for (String v : values) {
+                valueList.add(v.trim());
             }
 
-            String[] values = line.split(DELIMITER_REGEX, -1); 
-            List<String> valueList = Arrays.asList(values);
             return new Tuple(valueList);
         } catch (IOException e) {
             throw new RuntimeException("Error reading data file: " + this.dataFilePath, e);

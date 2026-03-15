@@ -9,8 +9,12 @@ import net.sf.jsqlparser.expression.Expression;
 
 import java.util.*;
 
+/**
+ * SumOperator is a unary operator that computes the sum of specified expressions over groups of tuples produced by its child operator. 
+ * It supports grouping by specified columns and outputs the group keys along with the computed sums. The operator materializes all 
+ * input tuples to perform the aggregation and serves the aggregated results on demand.
+ */
 
-//TODO: Review 
 public final class SumOperator extends Operator {
 
     private final Operator child;
@@ -51,6 +55,8 @@ public final class SumOperator extends Operator {
         this.pos = 0;
     }
 
+    // Helper method to resolve a list of column references (e.g., "table.col" or "col") into their corresponding column indexes 
+    // in the input tuples, using the provided resolver.
     private int[] resolveIndexes(List<String> refs) {
         int[] idxs = new int[refs.size()];
 
@@ -72,6 +78,8 @@ public final class SumOperator extends Operator {
         return idxs;
     }
 
+    // Retrieves the next tuple from the child operator that satisfies the selection predicate. 
+    // If the predicate is null, it returns all tuples from the child.
     @Override
     public Tuple getNextTuple() {
         if (out == null) materialise();
@@ -86,6 +94,8 @@ public final class SumOperator extends Operator {
         pos = 0;
     }
 
+    // Materialises all input tuples from the child operator, groups them according to the specified group keys, 
+    // computes the sums for each group, and stores the results in a list for serving on demand.
     private void materialise() {
         // For each group: store output key values + sums
         Map<GroupKey, AggState> acc = new LinkedHashMap<GroupKey, AggState>();
@@ -125,6 +135,9 @@ public final class SumOperator extends Operator {
         this.pos = 0;
     }
 
+    // Helper method to construct a GroupKey object for a given tuple based on the group key indexes. 
+    // If there are no group keys (global aggregation), it returns a special empty GroupKey instance.
+
     private GroupKey makeGroupKey(Tuple t) {
         if (groupKeyIndexes.length == 0) {
             return GroupKey.EMPTY; // global aggregation single group
@@ -137,6 +150,8 @@ public final class SumOperator extends Operator {
         return new GroupKey(vals);
     }
 
+    // Helper method to extract the output key values from a tuple based on the output key indexes.
+    //  These are the values that will be included in the output tuples before the computed sums.
     private List<String> extractOutputKeys(Tuple t) {
         if (outputKeyIndexes.length == 0) return Collections.emptyList();
         List<String> vals = new ArrayList<String>(outputKeyIndexes.length);
@@ -146,6 +161,8 @@ public final class SumOperator extends Operator {
         return vals;
     }
 
+    // Internal class to hold the aggregation state for each group, 
+    // including the output key values and the running sums for each expression.
     private static final class AggState {
         final List<String> outputKeys;
         final long[] sums;
@@ -156,6 +173,9 @@ public final class SumOperator extends Operator {
         }
     }
 
+    // Internal class to represent a group key, which is a combination of values from the group key columns.
+    // It implements equals and hashCode to be used as keys in a HashMap for aggregation.
+    // If there are no group keys (global aggregation), the EMPTY instance is used as the single group key.
     private static final class GroupKey {
         static final GroupKey EMPTY = new GroupKey(Collections.<String>emptyList());
 

@@ -7,6 +7,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Operator that eliminates duplicate tuples from its child operator. It materializes all tuples from the child,
+ * removes duplicates while preserving the order of first occurrences, and then serves the distinct tuples on demand.
+ */
+
 public final class DuplicateEliminationOperator extends Operator{
 
     private final Operator child;
@@ -38,6 +43,8 @@ public final class DuplicateEliminationOperator extends Operator{
         pos = 0;
     }
 
+    // Materialises all tuples from the child operator, removes duplicates while preserving the order of first occurrences,
+    // and stores the distinct tuples in a list for serving on demand.
     private void materialiseDistinct(){
         Set<Tuple> seen = new LinkedHashSet<Tuple>();
         Tuple t;

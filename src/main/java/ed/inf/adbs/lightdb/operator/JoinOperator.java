@@ -81,6 +81,8 @@ public final class JoinOperator extends Operator {
         currentLeft = null;
     }
 
+    // Helper method to concatenate two tuples into one combined tuple. The values from the left tuple come first, 
+    // followed by the values from the right tuple.
     private Tuple concat(Tuple left, Tuple right) {
         List<String> combinedValues = new ArrayList<String>(left.size() + right.size());
         combinedValues.addAll(left.asList());
@@ -88,6 +90,8 @@ public final class JoinOperator extends Operator {
         return new Tuple(combinedValues);
     }
 
+    // Returns the list of TableMeta objects representing the tables in the output of this operator, 
+    // in the order they appear in the combined tuples.
     public List<TableMeta> getOutputTablesInOrder() {
         return this.tableMetas;
     }

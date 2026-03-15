@@ -41,6 +41,7 @@ public final class PlanBuilder {
 
     // ===================== Stage 1: base plan =====================
 
+    // Builds the base plan consisting of Scan, Select, Join, and Filter operators based on the FROM and WHERE clauses of the query.
     private static PlanContext buildBase(PlainSelect ps) {
         List<Table> fromTables = extractFromTables(ps);
         if (fromTables.isEmpty()) throw new IllegalArgumentException("FROM clause is required.");
@@ -100,6 +101,7 @@ public final class PlanBuilder {
 
     // ===================== Stage 2: Aggregation =====================
 
+    // If the query has aggregate functions or GROUP BY, adds a SumOperator to perform the aggregation.
     private static PlanContext applyAggregationIfPresent(PlanContext ctx, QueryAnalysis qa) {
         if (!qa.hasAggregation()) return ctx;
 
@@ -131,6 +133,7 @@ public final class PlanBuilder {
 
     // ===================== Stage 3: Projection =====================
 
+    // If the SELECT list is not just *, adds a ProjectOperator to produce the desired output columns.
     private static PlanContext applyProjectionIfNeeded(PlanContext ctx, QueryAnalysis qa) {
         // If aggregation happened, output is already defined.
         if (ctx.outputRefs != null) return ctx;
@@ -148,6 +151,7 @@ public final class PlanBuilder {
 
     // ===================== Stage 4: DISTINCT =====================
 
+    // If SELECT DISTINCT is specified, adds a DuplicateEliminationOperator.
     private static PlanContext applyDistinct(PlainSelect ps, PlanContext ctx) {
         if (ps.getDistinct() != null) {
             ctx.root = new DuplicateEliminationOperator(ctx.root);
@@ -157,6 +161,7 @@ public final class PlanBuilder {
 
     // ===================== Stage 5: ORDER BY (after projection/agg) =====================
 
+    // If there is an ORDER BY clause, adds a SortOperator at the end of the plan. Validates that the ORDER BY columns are present in the projected schema.
     private static PlanContext applyOrderBy(PlainSelect ps, PlanContext ctx) {
         OrderSpec order = parseOrderBy(ps);
         if (order != null) {
@@ -168,6 +173,7 @@ public final class PlanBuilder {
 
     // ===================== helpers =====================
 
+    // Helper method to extract base tables from the FROM clause of the query. It supports simple tables and joins, but does not support subqueries or other complex FROM items.
     private static List<Table> extractFromTables(PlainSelect ps) {
         List<Table> out = new ArrayList<Table>();
 
@@ -187,6 +193,8 @@ public final class PlanBuilder {
         return out;
     }
 
+    // Helper method to generate the output column references for a SELECT * query, based on the tables in the FROM clause. 
+    // It produces qualified column names (e.g., "table.col") for all columns of all tables.
     private static List<String> starOutputRefs(List<TableMeta> tablesInOrder) {
         List<String> refs = new ArrayList<String>();
         for (TableMeta tm : tablesInOrder) {
@@ -203,6 +211,8 @@ public final class PlanBuilder {
         OrderSpec(List<String> cols, List<Boolean> asc) { this.cols = cols; this.asc = asc; }
     }
 
+    // Helper method to normalise column references by trimming whitespace and converting to lowercase. 
+    // This is used to ensure consistent matching of column names regardless of case or extra spaces.
     private static OrderSpec parseOrderBy(PlainSelect ps) {
         List<OrderByElement> elems = ps.getOrderByElements();
         if (elems == null || elems.isEmpty()) return null;

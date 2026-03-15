@@ -1,70 +1,52 @@
 package ed.inf.adbs.lightdb.operator;
 
-
-import ed.inf.adbs.lightdb.catalog.Catalog;
-import ed.inf.adbs.lightdb.catalog.SchemaLoader;
-
+import ed.inf.adbs.lightdb.Tuple;
+import ed.inf.adbs.lightdb.operator.util.TestDb;
 
 import org.junit.Before;
+import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-
+import static org.junit.Assert.*;
 
 public class ScanOperatorTest {
-    
-    private Path tempDbRoot;
-    private Path dbRoot;
-    private Path dataDir;
-    private Path schemaFile;
+
+    private TestDb db;
 
     @Before
     public void setUp() throws Exception {
-        resetCatalogSingleton();
+        db = TestDb.create()
+                .writeSchema("Student A B C\n")
+                .writeTable("Student",
+                        "1,2,3\n" +
+                        "4,5,6\n");
 
-        tempDbRoot = Files.createTempDirectory("lightdb_test_");
-        dbRoot = tempDbRoot.resolve("db");
-        dataDir = dbRoot.resolve("tables");
-        schemaFile = dbRoot.resolve("schema.txt");
-
-        Files.createDirectories(dataDir);
-        Files.createDirectories(dbRoot);
-
-        String schema =
-                "Student A B C D\n" +
-                "Course E F G\n" +
-                "Enrolled A E H\n";
-        Files.write(schemaFile, schema.getBytes(StandardCharsets.UTF_8));
-
-         Files.write(dataDir.resolve("Student.csv"),
-                ("101,2,3,4\n" +
-                 "102,5,6,7\n" +
-                 "103,8,9,10\n").getBytes(StandardCharsets.UTF_8));
-
-        Files.write(dataDir.resolve("Course.csv"),
-                ("1,CS,2025\n" +
-                 "2,DB,2026\n").getBytes(StandardCharsets.UTF_8));
-
-        Files.write(dataDir.resolve("Enrolled.csv"),
-                ("101,1,A+\n" +
-                 "102,2,B\n").getBytes(StandardCharsets.UTF_8));
-
-        // Initialise catalog + load schema into it
-        Catalog.init(dbRoot);
-        SchemaLoader.loadIntoCatalog(schemaFile, dataDir);
-
-
-
-
-
+        db.initCatalog();
     }
 
-    private static void resetCatalogSingleton() throws Exception {
-        Field f = Catalog.class.getDeclaredField("INSTANCE");
-        f.setAccessible(true);
-        f.set(null, null);
-}
+    @Test
+    public void scanReadsAllRows() {
+        ScanOperator scan = new ScanOperator("Student");
 
+        List<String> rows = new ArrayList<>();
+        Tuple t;
+        while ((t = scan.getNextTuple()) != null) {
+            rows.add(t.toString());
+        }
+
+        assertEquals(2, rows.size());
+        assertEquals("1, 2, 3", rows.get(0));
+        assertEquals("4, 5, 6", rows.get(1));
+    }
+
+    @Test
+    public void resetWorks() {
+        ScanOperator scan = new ScanOperator("Student");
+
+        assertNotNull(scan.getNextTuple());
+        scan.reset();
+        assertNotNull(scan.getNextTuple());
+    }
 }

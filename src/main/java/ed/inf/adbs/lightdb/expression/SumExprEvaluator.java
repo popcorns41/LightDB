@@ -32,6 +32,7 @@ public final class SumExprEvaluator {
         this.resolver = resolver;
     }
 
+    // Evaluates the expression and returns the long result. Throws an exception if the expression is invalid or does not evaluate to a long.
     public long eval(Expression e) {
         if (e == null) throw new IllegalArgumentException("SUM argument is null");
 

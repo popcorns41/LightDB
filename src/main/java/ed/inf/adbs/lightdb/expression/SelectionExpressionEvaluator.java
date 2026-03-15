@@ -42,6 +42,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
         this.tuple = tuple;
     }
 
+    // Evaluates the expression and returns the boolean result. Throws an exception if the expression is invalid or does not evaluate to a boolean.
     public boolean eval(Expression expr){
         if (expr == null){
             return true;
@@ -60,6 +61,9 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
         return ((Boolean) top).booleanValue();
     }
 
+    // -------------------------- Value expressions ------------------------------
+
+    // visit methods for supported expression types. Each should evaluate the expression and push the result onto the stack.
     @Override
     public void visit(LongValue longValue) {
         stack.push(Long.valueOf(longValue.getValue()));
@@ -81,7 +85,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
     }
 
     // -------------------------- Logical operators ------------------------------
-
+    // For logical operators, we expect the left and right subexpressions to evaluate to boolean values, which we pop from the stack, apply the operator, and push the result back onto the stack.
     @Override
     public void visit(AndExpression andExpression) {
         andExpression.getLeftExpression().accept(this);
@@ -134,7 +138,10 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
     public void visit(MinorThanEquals expr){
         evalCompare(expr.getLeftExpression(), expr.getRightExpression(), CompareOp.LTE);
     }
+    // -------------------------- Helper methods ------------------------------
 
+    // evaluates a comparison operator. It evaluates the left and right subexpressions, pops their values from the stack,
+    //  applies the specified comparison operator, and pushes the boolean result back onto the stack.
     private void evalCompare(Expression left, Expression right, CompareOp op) {
         left.accept(this);
         right.accept(this);
@@ -155,6 +162,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
         stack.push(Boolean.valueOf(result));
     }
 
+    // Helper methods to pop values from the stack with type checking and error handling.
     private long popLong() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("Evaluation stack is empty when expecting a long value");
@@ -166,6 +174,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
         return ((Long) o).longValue();
     }
 
+    // Helper methods to pop values from the stack with type checking and error handling.
     private boolean popBool() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("Evaluation stack is empty when expecting a boolean value");
@@ -177,6 +186,7 @@ public final class SelectionExpressionEvaluator extends ExpressionDeParser {
         return ((Boolean) o).booleanValue();
     }
 
+    // Enum to represent comparison operators. This makes the evalCompare method cleaner and more extensible.
     private enum CompareOp {
         EQ, NE, GT, GE, LT, LTE
     }

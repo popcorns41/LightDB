@@ -10,6 +10,19 @@ import java.util.List;
 public final class SchemaLoader {
     private SchemaLoader() {}
 
+    /**
+     * Loads the schema from the specified schema file and data directory into the Catalog.
+     * The schema file should have lines in the format:
+     * "TableName Column1 Column2 Column3"
+     * For each table, it checks if the table already exists in the Catalog. If not, 
+     * it registers the new table with the parsed columns and expected CSV file path. 
+     * If it does exist, it verifies that the existing schema matches the parsed schema and expected data file path,
+     *  throwing an exception if there is a mismatch.
+     * @param schemaFile
+     * @param dataDir
+     * @throws IOException
+     */
+
     public static void loadIntoCatalog(Path schemaFile, Path dataDir) throws IOException {
 
         if (schemaFile == null || dataDir == null) {
@@ -72,7 +85,10 @@ public final class SchemaLoader {
             }
         }
     }
-
+    
+    // Helper method to compare two lists of ColumnMeta for equality. 
+    // This checks that the columns have the same names, types, and nullability in the same order.
+    
     private static boolean sameColumns(List<ColumnMeta> a, List<ColumnMeta> b) {
         if (a.size() != b.size()) return false;
         for (int i = 0; i < a.size(); i++) {

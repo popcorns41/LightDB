@@ -30,6 +30,7 @@ public final class FilterOperator extends Operator {
         this.resolver = new MultiTableColumnIndexResolver(tablesInOrder);
     }
 
+    // Retrieves the next tuple from the child operator that satisfies the selection predicate. If the predicate is null, it returns all tuples from the child.
     @Override
     public Tuple getNextTuple(){
         Tuple t;

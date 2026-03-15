@@ -149,6 +149,8 @@ public final class QueryAnalyser {
         throw new IllegalArgumentException("Unsupported aggregate function: " + f.getName());
     }
 
+    // Helper method to extract the single argument of an aggregate function, 
+    // and validate that it has exactly one argument which is an Expression. Used for parsing SUM(expr) and COUNT(expr).
     private static Expression extractSingleArg(Function f, String name) {
         if (f.getParameters() == null || f.getParameters().isEmpty()) {
             throw new IllegalArgumentException(name + "() must have one argument");
@@ -163,6 +165,7 @@ public final class QueryAnalyser {
         return (Expression) only;
     }
 
+    // Helper method to parse the GROUP BY clause and extract the list of column references that define the grouping keys.
     private static List<String> parseGroupByCols(PlainSelect ps) {
         GroupByElement gbe = ps.getGroupBy();
         if (gbe == null || gbe.getGroupByExpressionList() == null || gbe.getGroupByExpressionList().isEmpty()) {
@@ -183,6 +186,9 @@ public final class QueryAnalyser {
         return refs;
     }
 
+    // Helper method to convert a Column object into a normalized column reference string, 
+    // including the table name if present (e.g., "table.col"). This is used to ensure consistent 
+    // matching of column references in the SELECT and GROUP BY clauses.
     private static String colRef(Column c) {
         String col = c.getColumnName();
         String table = (c.getTable() == null) ? null : c.getTable().getName();

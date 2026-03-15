@@ -4,6 +4,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Immutable metadata about a table, including its name, columns, and data file location.
+ */
+
 public final class TableMeta {
     private final long tableId;
     private final String name;

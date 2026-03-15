@@ -1,9 +1,25 @@
 package ed.inf.adbs.lightdb.catalog;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;;
+
+/**
+ * Singleton class managing the database catalog, which tracks metadata about tables (e.g. their schema and data file location).
+ * Provides thread-safe methods to query and modify the catalog, and persists the catalog to disk for durability.
+ * Note: For simplicity, this implementation uses a single file for the catalog and rewrites it on each change.
+ */
 
 public final class Catalog {
     private static volatile Catalog INSTANCE;
@@ -25,6 +41,7 @@ public final class Catalog {
         this.tablesDir = dbRoot.resolve("tables");
     }
 
+    // Initializes the Catalog singleton with the specified database root directory. Loads existing catalog data if present.
     public static Catalog init(Path dbRoot) throws IOException {
         if (dbRoot == null) throw new NullPointerException("dbRoot cannot be null");
 
@@ -40,6 +57,7 @@ public final class Catalog {
         return INSTANCE;
     }
 
+    // Returns the Catalog singleton instance. Throws an exception if the Catalog has not been initialized.
     public static Catalog getInstance() {
         Catalog inst = INSTANCE;
         if (inst == null) {
@@ -47,7 +65,7 @@ public final class Catalog {
         }
         return inst;
     }
-
+    
     public Path getDbRoot() {
         return dbRoot;
     }
@@ -189,12 +207,14 @@ public final class Catalog {
         }
     }
 
+    // Flushes the catalog to disk. Should be called after any changes to ensure durability.
+    //Hopefully works well with concurrent readers <3
     public void flush() throws IOException {
-        rwLock.readLock().lock();
+        rwLock.writeLock().lock();
         try {
             flushInternal();
         } finally {
-            rwLock.readLock().unlock();
+            rwLock.writeLock().unlock();
         }
     }
 
@@ -234,6 +254,16 @@ public final class Catalog {
             );
         } catch (AtomicMoveNotSupportedException e){
             Files.move(tmp, catalogFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /**
+     * Test-only helper: resets the Catalog singleton so tests can re-init it.
+     * WARNING: Not thread-safe with concurrent production usage; intended for unit tests.
+     */
+    public static void resetForTests() {
+        synchronized (Catalog.class) {
+            INSTANCE = null;
         }
     }
 

@@ -10,6 +10,8 @@ public final class CatalogSnapshotIO {
         // Prevent instantiation
     }
 
+    // Implementation for reading a CatalogSnapshot from the file. It reads the snapshot data in a binary format that 
+    // matches the write method.
     public static CatalogSnapshot read(Path file) throws IOException {
         // Implementation for reading a CatalogSnapshot from the file
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))){
@@ -39,6 +41,8 @@ public final class CatalogSnapshotIO {
         }
     }
 
+    // Implementation for writing a CatalogSnapshot to the file. It creates the parent directories if they don't exist, 
+    // and writes the snapshot data in a binary format that matches the read method.
     public static void write(Path file, CatalogSnapshot snap) throws IOException{
         Files.createDirectories(file.getParent());
 

@@ -93,7 +93,9 @@ public final class SortOperator extends Operator {
         sorted = null;
         pos = 0;
     }
-
+    // Helper method to materialize all input tuples from the child operator, 
+    // sort them according to the specified ORDER BY columns and directions,
+    // and store the sorted tuples in a list for serving on demand.
     private void materializeAndSort() {
         List<Tuple> all = new ArrayList<Tuple>();
         Tuple t;

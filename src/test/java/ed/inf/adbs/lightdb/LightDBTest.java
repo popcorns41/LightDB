@@ -20,6 +20,12 @@ import java.nio.file.*;
 
 import static org.junit.Assert.*;
 
+/**
+ * Note: This test class includes functionality to turn lists of strings into bags (maps of string to count) 
+ * to allow for order-insensitive comparisons of query outputs. 
+ * This is necessary because some queries don't have an ORDER BY clause, so their output can be in any order.
+ */
+
 public class LightDBTest {
 
     private static final Path DB_DIR = Paths.get("samples", "db");
@@ -92,6 +98,10 @@ public class LightDBTest {
 		runAndCompare("query12.sql", "query12.csv");
 	}
 
+	// ----- Helper methods for running queries and comparing outputs -----
+
+	// Helper method to run a query from a SQL file and compare its output to an expected output file. 
+	// It handles both order-sensitive and order-insensitive comparisons based on whether the query has an ORDER BY clause.
 	private void runAndCompare(String sqlFile, String expectedFile) throws Exception {
 		Path input = INPUT_DIR.resolve(sqlFile);
 		Path expected = EXPECTED_DIR.resolve(expectedFile);
@@ -134,6 +144,10 @@ public class LightDBTest {
 	}
 
 	// Helper method to compare two lists of strings as bags (ignoring order and duplicates). Provides a helpful diff if they don't match.
+	// Idea was inspired by the org.assertj.core.api.Assertions.assertThat implementation of "containsExactlyInAnyOrder" for iterables,
+	//  but adapted to provide a more helpful error message showing missing and extra rows. Plus, reduces needing to add another dependency
+	// to the pom.xml :)
+
 	private void assertBagEquals(String msg, List<String> expected, List<String> actual) {
 		Assert.assertEquals(msg + " (different row count)", expected.size(), actual.size());
 
@@ -176,6 +190,7 @@ public class LightDBTest {
 		return m;
 	}
 
+	// Helper method to trim whitespace from each line in a list of strings. This helps avoid issues with trailing spaces in the expected output files.
     private void normalise(List<String> lines) {
         for (int i = 0; i < lines.size(); i++) {
             lines.set(i, lines.get(i).trim());

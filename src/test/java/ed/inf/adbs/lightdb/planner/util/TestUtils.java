@@ -42,4 +42,25 @@ public final class TestUtils {
         }
         return cleaned;
     }
+
+    public static void assertBagEquals(List<String> expected, List<String> actual) {
+    org.junit.Assert.assertEquals("Different row count", expected.size(), actual.size());
+
+    java.util.Map<String, Integer> e = bag(expected);
+    java.util.Map<String, Integer> a = bag(actual);
+
+    if (!e.equals(a)) {
+        org.junit.Assert.fail("Bag mismatch.\nExpected: " + e + "\nActual: " + a);
+    }
+    }
+
+    private static java.util.Map<String, Integer> bag(List<String> lines) {
+        java.util.Map<String, Integer> m = new java.util.HashMap<String, Integer>();
+        for (String s : lines) {
+            String key = s.trim();
+            Integer c = m.get(key);
+            m.put(key, c == null ? 1 : c + 1);
+        }
+        return m;
+    }
 }

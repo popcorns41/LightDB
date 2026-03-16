@@ -44,17 +44,20 @@ public final class ExpressionUtils {
         final Set<String> tables = new HashSet<String>();
 
         if (e == null) return tables;
-        
-        // Walk the expression tree and collect table names from Column nodes
+
         e.accept(new ExpressionDeParser() {
             @Override
             public void visit(Column column){
                 if (column.getTable() != null && column.getTable().getName() != null){
-                    tables.add(column.getTable().getName());
+                    tables.add(norm(column.getTable().getName()));
                 }
             }
         });
 
         return tables;
+    }
+
+    private static String norm(String s){
+        return s.trim().toLowerCase(Locale.ROOT);
     }
 }

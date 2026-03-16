@@ -6,14 +6,10 @@ import net.sf.jsqlparser.expression.Expression;
 import java.util.*;
 
 /**
- * WhereClassifier is a utility class to decompose the WHERE clause of a SQL query into components that can be applied at different stages
- *  of query execution. It takes the WHERE expression and allows you to extract:
- * 
- * 1) Single-table predicates: conditions that reference only one table, which can be pushed down to the scan operator for that table.
- * 2) Join predicates: conditions that reference columns from two sets of tables (e.g., left and right in a join), which can be applied at the join operator.
- * 3) Remaining predicates: any conditions that are not extracted as single-table or join predicates, which can be applied at the top of the operator tree as a safety net.
- * 
- * The class maintains an internal list of remaining predicates that are updated as predicates are extracted. 
+ * WhereClassifier decomposes the WHERE clause into:
+ * 1) single-table predicates
+ * 2) join predicates
+ * 3) remaining predicates
  */
 
 public final class WhereClassifier {
@@ -26,14 +22,16 @@ public final class WhereClassifier {
 
     /** Predicates that reference only this table (or none). */
     public List<Expression> extractSingleTable(String tableName) {
+        String normTable = norm(tableName);
+
         List<Expression> out = new ArrayList<Expression>();
         Iterator<Expression> it = remaining.iterator();
 
         while (it.hasNext()) {
             Expression e = it.next();
-            Set<String> refs = ExpressionUtils.referencedTables(e);
+            Set<String> refs = normaliseRefs(ExpressionUtils.referencedTables(e));
 
-            if (refs.isEmpty() || (refs.size() == 1 && refs.contains(tableName))) {
+            if (refs.isEmpty() || (refs.size() == 1 && refs.contains(normTable))) {
                 out.add(e);
                 it.remove();
             }
@@ -41,19 +39,30 @@ public final class WhereClassifier {
         return out;
     }
 
-    /** Predicates that connect (any of) leftTables to rightTable. */
+    /** Predicates that connect any table in leftTables to rightTable. */
     public List<Expression> extractJoinPredicates(Set<String> leftTables, String rightTable) {
+        Set<String> normLeft = new HashSet<String>();
+        for (String lt : leftTables) {
+            normLeft.add(norm(lt));
+        }
+
+        String normRight = norm(rightTable);
+
         List<Expression> out = new ArrayList<Expression>();
         Iterator<Expression> it = remaining.iterator();
 
         while (it.hasNext()) {
             Expression e = it.next();
-            Set<String> refs = ExpressionUtils.referencedTables(e);
+            Set<String> refs = normaliseRefs(ExpressionUtils.referencedTables(e));
 
-            boolean touchesRight = refs.contains(rightTable);
+            boolean touchesRight = refs.contains(normRight);
             boolean touchesLeft = false;
-            for (String lt : leftTables) {
-                if (refs.contains(lt)) { touchesLeft = true; break; }
+
+            for (String lt : normLeft) {
+                if (refs.contains(lt)) {
+                    touchesLeft = true;
+                    break;
+                }
             }
 
             if (touchesLeft && touchesRight) {
@@ -61,10 +70,23 @@ public final class WhereClassifier {
                 it.remove();
             }
         }
+
         return out;
     }
 
     public List<Expression> getRemaining() {
         return new ArrayList<Expression>(remaining);
+    }
+
+    private static Set<String> normaliseRefs(Set<String> refs) {
+        Set<String> out = new HashSet<String>();
+        for (String r : refs) {
+            out.add(norm(r));
+        }
+        return out;
+    }
+
+    private static String norm(String s) {
+        return s.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -1,6 +1,6 @@
 package ed.inf.adbs.lightdb.planner;
 
-import ed.inf.adbs.lightdb.planner.util.CwDbFixture;
+// import ed.inf.adbs.lightdb.util.CwDbFixture;
 
 import ed.inf.adbs.lightdb.operator.Operator;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -15,7 +15,8 @@ public class PlanBuilderTest {
 
     @BeforeClass
     public static void loadCatalog() throws Exception {
-        CwDbFixture.ensureLoaded();
+        // CwDbFixture.ensureLoaded();
+        // If you need to load a catalog, implement it here or remove this method if unnecessary.
     }
 
     // Helper method to build a plan from a SQL string. This allows us to write more concise tests.

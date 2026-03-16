@@ -1,16 +1,33 @@
 package ed.inf.adbs.lightdb.planner;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import ed.inf.adbs.lightdb.catalog.Catalog;
 import ed.inf.adbs.lightdb.catalog.TableMeta;
-import ed.inf.adbs.lightdb.operator.*;
+import ed.inf.adbs.lightdb.operator.DuplicateEliminationOperator;
+import ed.inf.adbs.lightdb.operator.FilterOperator;
+import ed.inf.adbs.lightdb.operator.JoinOperator;
+import ed.inf.adbs.lightdb.operator.Operator;
+import ed.inf.adbs.lightdb.operator.ProjectOperator;
+import ed.inf.adbs.lightdb.operator.ScanOperator;
+import ed.inf.adbs.lightdb.operator.SelectOperator;
+import ed.inf.adbs.lightdb.operator.SortOperator;
+import ed.inf.adbs.lightdb.operator.SumOperator;
 import ed.inf.adbs.lightdb.util.ExpressionUtils;
-
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.select.*;
-
-import java.util.*;
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.OrderByElement;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 
 /**
  * PlanBuilder is the main class responsible for constructing a query execution plan (a tree of Operator instances) from a parsed SQL query (represented as a PlainSelect).
@@ -28,8 +45,10 @@ public final class PlanBuilder {
     private PlanBuilder() {}
 
     public static Operator build(PlainSelect ps) {
-        PlanContext ctx = buildBase(ps);                 // Scan/Select/Join/Filter
-        QueryAnalysis qa = QueryAnalyser.analyze(ps);    // single analysis pass
+        QueryAnalysis qa = QueryAnalyser.analyze(ps);
+        Map<String, Set<String>> requiredByTable = RequiredColumnsAnalyser.analyse(ps, qa);
+
+        PlanContext ctx = buildBase(ps, qa, requiredByTable);
 
         ctx = applyAggregationIfPresent(ctx, qa);
         ctx = applyProjectionIfNeeded(ctx, qa);
@@ -42,40 +61,66 @@ public final class PlanBuilder {
     // ===================== Stage 1: base plan =====================
 
     // Builds the base plan consisting of Scan, Select, Join, and Filter operators based on the FROM and WHERE clauses of the query.
-    private static PlanContext buildBase(PlainSelect ps) {
+    private static PlanContext buildBase(PlainSelect ps,QueryAnalysis qa,Map<String, Set<String>> requiredByTable) {
         List<Table> fromTables = extractFromTables(ps);
-        if (fromTables.isEmpty()) throw new IllegalArgumentException("FROM clause is required.");
+        if (fromTables.isEmpty()) {
+            throw new IllegalArgumentException("FROM clause is required.");
+        }
 
         WhereClassifier wc = new WhereClassifier(ps.getWhere());
 
         Map<String, Plan> base = new HashMap<String, Plan>();
 
+        // Build optimized base plans:
+        // Scan -> Select(single-table predicates) -> Project(required columns)
         for (Table t : fromTables) {
-            String name = t.getName();
+            String name = norm(t.getName());
 
-            TableMeta meta = Catalog.getInstance()
+            TableMeta originalMeta = Catalog.getInstance()
                     .getTable(name)
                     .orElseThrow(() -> new IllegalArgumentException("Table not found in catalog: " + name));
 
             Operator op = new ScanOperator(name);
 
+            // 1) Push down single-table selection first
             List<Expression> singles = wc.extractSingleTable(name);
             Expression singleWhere = ExpressionUtils.andAll(singles);
             if (singleWhere != null) {
-                op = new SelectOperator(op, singleWhere, meta);
+                op = new SelectOperator(op, singleWhere, originalMeta);
             }
 
-            base.put(name, new Plan(op, Collections.singletonList(meta)));
+            // Default schema flowing upward is the original one
+            TableMeta flowedMeta = originalMeta;
+
+            // 2) Push down projection only if this is NOT a SELECT * query
+            if (!qa.isStar) {
+                Set<String> neededCols = requiredByTable.get(name);
+
+                if (neededCols != null && !neededCols.isEmpty()) {
+                    List<String> refs = requiredRefsInSchemaOrder(originalMeta, neededCols);
+
+                    // Only add ProjectOperator if it actually removes columns
+                    if (refs.size() < originalMeta.getColumns().size()) {
+                        op = new ProjectOperator(op, refs, Collections.singletonList(originalMeta));
+                        flowedMeta = projectedTableMeta(originalMeta, neededCols);
+                    }
+                }
+            }
+
+            base.put(name, new Plan(op, Collections.singletonList(flowedMeta)));
         }
 
-        Plan acc = base.get(fromTables.get(0).getName());
+        // Build left-deep join tree in FROM order
+        Plan acc = base.get(norm(fromTables.get(0).getName()));
 
         for (int i = 1; i < fromTables.size(); i++) {
-            String rightName = fromTables.get(i).getName();
+            String rightName = norm(fromTables.get(i).getName());
             Plan right = base.get(rightName);
 
             Set<String> leftNames = new HashSet<String>();
-            for (TableMeta tm : acc.tables) leftNames.add(tm.getName());
+            for (TableMeta tm : acc.tables) {
+                leftNames.add(norm(tm.getName()));
+            }
 
             List<Expression> joinConds = wc.extractJoinPredicates(leftNames, rightName);
             Expression joinExpr = ExpressionUtils.andAll(joinConds);
@@ -91,6 +136,7 @@ public final class PlanBuilder {
 
         Operator root = acc.op;
 
+        // Apply any remaining predicates above the join tree
         List<Expression> leftover = wc.getRemaining();
         if (!leftover.isEmpty()) {
             root = new FilterOperator(root, ExpressionUtils.andAll(leftover), acc.tables);
@@ -172,6 +218,44 @@ public final class PlanBuilder {
     }
 
     // ===================== helpers =====================
+
+    // Helper method to create a new TableMeta with only the required columns for a table, based on the analysis of the query. 
+    // This is used to inform the ScanOperator and other operators about the schema of the data they are processing 
+    // after pushing down projections.
+    private static TableMeta projectedTableMeta(TableMeta original, Set<String> requiredCols) {
+        List<ed.inf.adbs.lightdb.catalog.ColumnMeta> projectedCols =
+                new ArrayList<ed.inf.adbs.lightdb.catalog.ColumnMeta>();
+
+        for (int i = 0; i < original.getColumns().size(); i++) {
+            ed.inf.adbs.lightdb.catalog.ColumnMeta col = original.getColumns().get(i);
+            if (requiredCols.contains(norm(col.getName()))) {
+                projectedCols.add(col);
+            }
+        }
+
+        return new TableMeta(
+                original.getTableId(),
+                original.getName(),
+                projectedCols,
+                original.getDataFile()
+        );
+    }
+
+    // Helper method to determine which columns are required from a table based on the analysis of the query.
+    //  It checks the required columns for the table and returns them in the order they appear in the table schema.
+    private static List<String> requiredRefsInSchemaOrder(TableMeta meta, Set<String> requiredCols) {
+        List<String> refs = new ArrayList<String>();
+        String table = norm(meta.getName());
+
+        for (int i = 0; i < meta.getColumns().size(); i++) {
+            String col = norm(meta.getColumns().get(i).getName());
+            if (requiredCols.contains(col)) {
+                refs.add(table + "." + col);
+            }
+        }
+
+        return refs;
+    }
 
     // Helper method to extract base tables from the FROM clause of the query. It supports simple tables and joins, but does not support subqueries or other complex FROM items.
     private static List<Table> extractFromTables(PlainSelect ps) {

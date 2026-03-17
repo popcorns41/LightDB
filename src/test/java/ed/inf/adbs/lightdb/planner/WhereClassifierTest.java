@@ -1,13 +1,12 @@
 package ed.inf.adbs.lightdb.planner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import ed.inf.adbs.lightdb.util.ExpressionUtils;
@@ -15,7 +14,9 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 
 public class WhereClassifierTest {
-    // Does splitSingleTable extract predicates that only reference the given table, and leave the rest behind?
+
+    // Does extractSingleTable extract predicates that only reference the given table,
+    // and leave the rest behind?
     @Test
     public void splitsSingleTableJoinAndLeftovers() throws Exception {
         Expression where = CCJSqlParserUtil.parseCondExpression(
@@ -30,18 +31,18 @@ public class WhereClassifierTest {
         List<Expression> e = wc.extractSingleTable("Enrolled");
         assertEquals(1, e.size());
 
-        Set<String> left = new HashSet<String>();
+        Set<String> left = new HashSet<>();
         left.add("Student");
 
         List<Expression> join = wc.extractJoinPredicates(left, "Enrolled");
         assertEquals(1, join.size());
-        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("Student"));
-        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("Enrolled"));
+        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("student"));
+        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("enrolled"));
 
         assertTrue(wc.getRemaining().isEmpty());
     }
 
-    // Does extractSingleTable not extract predicates that reference other tables, even if they also reference the given table?
+    // Does extractSingleTable avoid pulling predicates that reference other tables?
     @Test
     public void doesNotExtractPredicatesReferencingOtherTables() throws Exception {
         Expression where = CCJSqlParserUtil.parseCondExpression(
@@ -52,21 +53,21 @@ public class WhereClassifierTest {
 
         List<Expression> s = wc.extractSingleTable("Student");
         assertEquals(1, s.size());
-        assertTrue(ExpressionUtils.referencedTables(s.get(0)).contains("Student"));
-        assertFalse(ExpressionUtils.referencedTables(s.get(0)).contains("Enrolled"));
+        assertTrue(ExpressionUtils.referencedTables(s.get(0)).contains("student"));
+        assertFalse(ExpressionUtils.referencedTables(s.get(0)).contains("enrolled"));
 
         List<Expression> e = wc.extractSingleTable("Enrolled");
         assertEquals(1, e.size());
-        assertTrue(ExpressionUtils.referencedTables(e.get(0)).contains("Enrolled"));
-        assertFalse(ExpressionUtils.referencedTables(e.get(0)).contains("Student"));
+        assertTrue(ExpressionUtils.referencedTables(e.get(0)).contains("enrolled"));
+        assertFalse(ExpressionUtils.referencedTables(e.get(0)).contains("student"));
 
-        Set<String> left = new HashSet<String>();
+        Set<String> left = new HashSet<>();
         left.add("Student");
 
         List<Expression> join = wc.extractJoinPredicates(left, "Enrolled");
         assertEquals(1, join.size());
-        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("Student"));
-        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("Enrolled"));
+        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("student"));
+        assertTrue(ExpressionUtils.referencedTables(join.get(0)).contains("enrolled"));
 
         assertTrue(wc.getRemaining().isEmpty());
     }

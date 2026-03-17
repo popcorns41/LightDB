@@ -1,40 +1,38 @@
 package ed.inf.adbs.lightdb.planner;
 
-// import ed.inf.adbs.lightdb.util.CwDbFixture;
-
-import ed.inf.adbs.lightdb.operator.Operator;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue; // adjust package if needed
+import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import ed.inf.adbs.lightdb.operator.Operator;
+import ed.inf.adbs.lightdb.planner.util.CwDbFixture;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
 
 public class PlanBuilderTest {
 
+    // Load the catalog before running any tests
     @BeforeClass
     public static void loadCatalog() throws Exception {
-        // CwDbFixture.ensureLoaded();
-        // If you need to load a catalog, implement it here or remove this method if unnecessary.
+        CwDbFixture.ensureLoaded();
     }
 
-    // Helper method to build a plan from a SQL string. This allows us to write more concise tests.
     private Operator build(String sql) throws Exception {
         Select sel = (Select) CCJSqlParserUtil.parse(sql);
         PlainSelect ps = sel.getPlainSelect();
         return PlanBuilder.build(ps);
     }
-
-    //Smoking gun test: does a simple SELECT * FROM Student build a plan without throwing an exception?
-    //Basically, does my PlanBuiler compile and not crash? :D
+    // Does planner accept SELECT * without GROUP BY?
     @Test
     public void selectStarIsAccepted() throws Exception {
         Operator root = build("SELECT * FROM Student;");
         assertNotNull(root);
     }
 
-    // Does a non-SELECT statement throw an exception?
+    // Does non aggregate select item have to be a column reference?
     @Test
     public void nonAggregateSelectItemMustBeColumn() throws Exception {
         try {
@@ -45,7 +43,7 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does an aggregate select item that is not at the end of the select list throw an exception?
+    // Does planner require aggregate functions to be at the end of the select list?
     @Test
     public void aggregatesMustAppearAtEnd() throws Exception {
         try {
@@ -56,7 +54,7 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does a GROUP BY item that is not a column throw an exception?
+    // Does planner require GROUP BY items to be column references?
     @Test
     public void groupByMustBeColumnsOnly() throws Exception {
         try {
@@ -67,7 +65,7 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does a non-aggregate select item that is not in the GROUP BY throw an exception?
+    // Does planner require non-aggregate select items to appear in GROUP BY?
     @Test
     public void nonAggregateSelectColsMustAppearInGroupBy() throws Exception {
         try {
@@ -78,7 +76,7 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does an ORDER BY item that is not in the output schema throw an exception?
+    // Does planner require ORDER BY items to be in the output schema?
     @Test
     public void orderByNotInOutputSchemaIsRejected() throws Exception {
         try {
@@ -89,10 +87,9 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does a SELECT * with GROUP BY throw an exception (as per cw requirements)?
+    // Does planner reject SELECT * if GROUP BY is present?
     @Test
     public void selectStarWithGroupByRejected() throws Exception {
-        // Your analyzer explicitly rejects SELECT * with GROUP BY
         try {
             build("SELECT * FROM Student GROUP BY Student.A;");
             fail("Expected IllegalArgumentException for SELECT * with GROUP BY");
@@ -101,7 +98,7 @@ public class PlanBuilderTest {
         }
     }
 
-    // Does a valid query build a plan without throwing an exception?
+    // smoke test: does a valid query build a plan without throwing exceptions?
     @Test
     public void smoke_validQueryBuildsPlan() throws Exception {
         Operator root = build("SELECT Student.A FROM Student;");

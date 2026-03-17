@@ -1,4 +1,6 @@
-** Task 1: JOIN CONDITION EXTRACTION 
+# README
+
+## Task 1: JOIN CONDITION EXTRACTION 
 
 Join condition extraction is implemented in the class:
 
@@ -28,7 +30,7 @@ This logic ensures:
 
 ---
 
-** Task 2: Query optimisation
+## Task 2: Query optimisation
 
 The system implements rule-based logical optimisation during query planning in:
 
@@ -40,7 +42,7 @@ The system implements rule-based logical optimisation during query planning in:
 
 The following optimisation rules are applied:
 
-*** 1. Predicate Pushdown
+### 1. Predicate Pushdown
 
 Selection predicates that reference only a single table are applied immediately after the ScanOperator.
 
@@ -62,7 +64,7 @@ Benefit:
 - Avoids generating large cross products.
 - Reduces intermediate result size signficantly.
 
-*** 3. Projection Pushdown
+### 3. Projection Pushdown
 
 Only required columns are retained as early as possible using ProjectOperator.
 
@@ -83,7 +85,7 @@ Benefit:
 - Reduces memory usage.
 - Improves performance of joins and aggregation.
 
-*** 4. Late Projection and Sorting
+### 4. Late Projection and Sorting
 
 Projection is applied before ORDER BY.
 
@@ -93,7 +95,7 @@ Correctness:
 Benefit:
 -Sorting is performed on smaller tuples, improving efficiency.
 
-*** 5. Aggregation Placement
+### 5. Aggregation Placement
 
 Aggregation is applied after filtering and joins.
 
@@ -103,7 +105,7 @@ Correctness:
 Benefit:
 - Reduces the number of tuples before expensive operations like sorting.
 
-*** 6. DISTINCT via Hashing
+### 6. DISTINCT via Hashing
 
 Duplicate elimination is implemented using a LinkedHahSet.
 
@@ -116,9 +118,9 @@ Benefit:
 
 ---
 
-** Additional Information
+## Additional Information
 
-*** Added functionality
+### Added functionality
 
 Although not required by the coursework specification, implementing this simple persistence mechanism for Catalog was a self assigned challenge. Using:
 
@@ -141,6 +143,6 @@ Note: This functionality is not required for query execution correctness and is 
 relied upon by the query planner or operators. It is included as an additional
 extension.
 
-*** Generative AI use
+### Generative AI use
 
-Microsoft Copilot on VScode was utilised to aid in general debugging and comments generation. 
+Microsoft Copilot on VScode was utilised to aid in general debugging and documentation comments generation. 
